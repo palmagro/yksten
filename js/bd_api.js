@@ -7,7 +7,7 @@ get_schema = function()
 	// What is related, and how
 	var getSchemaCyph = 
 	{
-	  "query" : "MATCH (a)-[r]->(b) WHERE r.kfield = '"+kfield+"' RETURN DISTINCT head(labels(a)) AS This, type(r) as To, head(labels(b)) AS That LIMIT 100",
+	  "query" : "MATCH (a)-[r]->(b) RETURN DISTINCT head(labels(a)) AS This, type(r) as To, head(labels(b)) AS That LIMIT 100",
 	  "params" : {	  }
 	};
 	if(kfield == "todo")

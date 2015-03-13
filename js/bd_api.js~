@@ -1,5 +1,5 @@
 //Neo4j URL
-var restServerURL = "http://150.214.140.123:8080/db/data";
+var restServerURL = "http://mowento.cs.us.es:7777/db/data";
 
 //Método para extraer el esquema de Neo4j
 get_schema = function()
