@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+  <div id="fb-root"></div>
+  <h1>Bienvenido, primero de todo, haz log in con tu cuenta de Facebook, por favor.</h1>
+  <div id="login-flow">
+    <fb:login-button perms="email,offline_access" show-faces="true"></fb:login-button>
+  </div>
+{% block topbar %}
+
+
+
+
+{% endblock %}
+
+{% block content %}
+
+{% endblock %}
