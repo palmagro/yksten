@@ -1,0 +1,40 @@
+var ui = {
+	start_scan : function() {
+		$("#get-started").hide();   
+		$('#friendsButton').hide();
+		$("#cabecera").replaceWith("Progreso: ");
+		$('#progressBar').show();
+        progress(3);
+	},
+
+	add_friend : function(name){
+		 $('#progressBar').show();
+		 var percentage = (cont_general*100)/(loop.length-1);
+		 if(percentage<0){percentage=0;}
+		 percentage = Math.round(percentage);
+		 progress(percentage, $('#progressBar'));
+		 if (cont_general == loop.length - 1)
+		 {
+			$("#cabecera").hide();
+			$('#progressBar').empty();
+			$('#progressBar').append("Completado! Gracias por utilizar CorpuRed.");
+	     } 
+	},
+
+	add_status : function(cont, total){
+		 //$("#porcentaje").empty();
+		 //$("#porcentaje").append("Analizando statuses: " + (cont/total)*100 +"%" );
+	},
+
+	add_photo : function(cont, total){
+		 //$("#porcentaje").empty();
+		 //$("#porcentaje").append("Analizando photos: " + (cont/total)*100 +"%" );
+	}
+}
+
+function progress(percent, $element) {
+    percent = (percent < 3) ? 3 : percent;
+	var progressBarWidth = percent * $element.width() / 100;
+    percent = (percent >= 100) ? "¡Gracias!" : percent + "%";
+	$element.find('div').animate({ width: progressBarWidth }, 500).html(percent + "&nbsp;");
+}

@@ -1,0 +1,12 @@
+var dict = [];
+dict[0] =
+{
+	hi:"what ",
+	and:"... and what "
+}
+
+dict[1] =
+{
+	hi:"Qu\xe9 ",
+	and:"... y qu\xe9 "
+}

@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block topbar %}
+  <!-- By passing a valid access token here, we are able to display -->
+  <!-- the user's images without having to download or prepare -->
+  <!-- them ahead of time -->
+
+{% endblock %}
+
+{% block content %}
+<div id="table"></div>
+{% endblock%}

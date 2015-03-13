@@ -1,0 +1,532 @@
+//ESTAMOS DANDO POR HECHO, QUE TODOS LOS NODOS ORIGENES DE UNA RELACION EN LA FUNCION CREA_REL PERTENECEN A USUARIOS DE FACEBOOK, PORQUE SI NO LOS TENEMOS EN LA BD ESTAMOS OBTENIENDO LOS DATOS DE ALLI
+
+var response0;
+
+var loop;
+var cont_general = 0;
+
+//Vble donde guardamos la información del nodo amigo
+var amigoTemp;
+
+//Vble donde guardamos la información del nodo del usuario que usa corpured
+var original;
+
+var temp1;
+
+//Limites en las peticiones a Facebook Graph
+var limiteLikes = 25;
+var limiteComments = 25;
+var limiteStatus = 25;
+
+var extraction_version = 3;
+
+//Variable para activar las propiedades del modo testing
+var testing = false;
+
+//Función que extrae los objetos family de la API de FB correspondiente y crea los nodos necesarios
+crea_familia = function(id)
+{
+   //console.log("creando familia");
+   FB.api(
+    {
+        method: 'fql.query',
+        query: 'SELECT name,relationship,uid FROM family WHERE profile_id = '+id
+    },
+    function(response) {
+        //Llamamos a la función que crea a los amigos
+        for (var c in response)
+        {    
+           //Creamos la relacion familiar
+           var relObject = {
+               "to": amigoTemp,
+               "type": response[c].relationship.replace(" ","_"),
+               "relation_updated_date": current_date(),
+               "extraction_version": extraction_version
+           };
+           var origen = { "id" : response[c].uid , "name" : response[c].name , "type" : "user","work":response[c].work, "user_type" : ""}; 
+		   crea_nodo(origen)
+           crea_rel(origen,relObject);
+        }
+        status_analizer(id); 
+    });
+}
+
+
+//Función que extrae los status de cada amigo extraído por la función pricipal y crea los nodos necesarios
+status_analizer = function(id)
+{
+    FB.api(id+"/statuses?fields=likes.limit(" + limiteLikes + "),comments.limit(" + limiteComments + ").fields(message,created_time,from,likes.limit(" + limiteLikes + ")),message&limit=" + limiteStatus , function(response)
+    {
+	    for (var c in response.data)
+	    {   
+	        //Actualizamos la vista con el porcentaje de los statuses extraidos de este user
+	        //console.log('añadido status');
+	        ui.add_status(c,response.data.length);
+	        
+			//Creamos el nodo status
+	        var nodeObject = {
+	           "type": "status",
+	           "text": response.data[c].message,
+	           "date": response.data[c].updated_date,
+	           "id": response.data[c].id,
+               "node_updated_date": current_date(),
+               "extraction_version": extraction_version
+	        };
+	        crea_nodo(nodeObject);
+	        
+			//Creamos la relación escribió status 
+	        var relObject = {
+	            "to": nodeObject,
+	            "type": "wrote_status",
+                "relation_updated_date": current_date(),
+                "extraction_version": extraction_version
+	        };
+	        crea_rel(amigoTemp,relObject);
+	                  
+	        //Si los tiene, recorremos los likes del status
+	        if(response.data[c].likes)
+	        {
+	            for (var d in response.data[c].likes.data) 
+	            {
+	                //Creamos la relación like
+	                var relObject = {
+	                   "to": nodeObject,
+	                   "type": "like",
+                       "relation_updated_date": current_date(),
+                       "extraction_version": extraction_version
+	                };
+	                crea_rel(response.data[c].likes.data[d],relObject);
+	            }
+	        }
+            
+	        //Si los tiene, recorremos los comentarios de el status
+	        if(c < response.data.length)
+	        {
+	            if(response.data[c].comments)
+	            {
+	                for (var d in response.data[c].comments.data) 
+	                    {
+	                        //Creamos el nodo comment
+							var nodeComment = {
+							   "type": "comment",
+							   "text": response.data[c].comments.data[d].message,
+							   "date": response.data[c].comments.data[d].created_time,
+							   "id": response.data[c].comments.data[d].id,
+                               "node_updated_date": current_date(),
+                               "extraction_version": extraction_version
+							};
+					        crea_nodo(nodeComment);
+					
+							//Creamos la relación escribió comment 
+							var relObject = {
+								"to": nodeComment,
+								"type": "wrote_comment",
+                                "relation_updated_date": current_date(),
+                                "extraction_version": extraction_version
+							};
+							crea_rel(response.data[c].comments.data[d].from,relObject);
+
+							//Creamos la relación escribió comment 
+							var relObject = {
+								"to": nodeObject,
+								"type": "comment_on",
+                                "relation_updated_date": current_date(),
+                                "extraction_version": extraction_version
+							};
+							crea_rel(nodeComment,relObject);
+	                   		//Si los tiene, recorremos los likes del comment del status
+							if(response.data[c].comments.data[d].likes)
+							{
+								for (var e in response.data[c].comments.data[d].likes.data) 
+								{
+									//Creamos la relación like
+									var relObject = {
+									   "to": nodeComment,
+									   "type": "like",
+                                       "relation_updated_date": current_date(),
+                                       "extraction_version": extraction_version
+									};
+									crea_rel(response.data[c].comments.data[d].likes.data[e],relObject);
+								}
+							}
+	                    }
+	           		}
+		        }
+	    }
+	    photos_analizer(id);
+	    return;		
+    });
+};
+
+//Función que extrae las fotos de cada amigo extraído por la función pricipal y crea los nodos necesarios
+photos_analizer = function(id)
+{
+    FB.api(id+"/photos?fields=comments,created_time,tags,likes,source", function(response)
+    {
+        for (var c in response.data)
+        {    
+            //console.log('añadida photo');
+
+            //ACtualizamos la vista con el porcentaje de las photos extraidas de este user
+            ui.add_photo(c,response.data.length);
+
+            //Creamos el nodo photo
+            var nodeObject = {
+               "type": "photo",
+               "date": response.data[c].created_time,
+               "id": response.data[c].id,
+               "source": response.data[c].source,
+               "node_updated_date": current_date(),
+               "extraction_version": extraction_version
+            };
+            crea_nodo(nodeObject);
+
+			//Creamos la relacion published_photo
+            var relObject = {
+                   "to": nodeObject,
+                   "type": "published_photo",
+                   "relation_updated_date": current_date(),
+                   "extraction_version": extraction_version
+            };
+			crea_rel(amigoTemp,relObject);
+
+			//Si los tiene, recorremos los comentarios de la foto
+            if(response.data[c].comments)
+            {
+                for (var d in response.data[c].comments.data) 
+                {
+                    //Creamos el nodo comment
+					var nodeComment = {
+					   "type": "comment",
+					   "text": response.data[c].comments.data[d].message,
+					   "date": response.data[c].comments.data[d].created_time,
+					   "id": response.data[c].comments.data[d].id,
+                       "node_updated_date": current_date(),
+                       "extraction_version": extraction_version
+					};
+		            crea_nodo(nodeComment);
+				
+					//Creamos la relación escribió comment 
+					var relObject = {
+						"to": nodeComment,
+						"type": "wrote_comment",
+                        "relation_updated_date": current_date(),
+                        "extraction_version": extraction_version
+					};
+					crea_rel(response.data[c].comments.data[d].from,relObject);
+
+					//Creamos la relación escribió comment 
+					var relObject = {
+						"to": nodeObject,
+						"type": "comment_on",
+                        "relation_updated_date": current_date(),
+                        "extraction_version": extraction_version
+					};
+					crea_rel(nodeComment,relObject);
+
+               		//Si los tiene, recorremos los likes del comment de la photo
+					if(response.data[c].comments.data[d].likes)
+					{
+						for (var e in response.data[c].comments.data[d].likes.data) 
+						{
+						    //Creamos la relación like
+						    var relObject = {
+						       "to": nodeComment,
+						       "type": "like",
+                               "relation_updated_date": current_date(),
+                               "extraction_version": extraction_version
+						    };
+						    crea_rel(response.data[c].comments.data[d].likes.data[e],relObject);
+						}
+					}
+                }
+            }
+            //Si las tiene, recorremos las etiquetas de la foto
+            if(response.data[c].tags)
+            {
+                for (var d in response.data[c].tags.data) 
+                {
+                    //Creamos la relación comment
+                    var relObject = {
+                       "to": nodeObject,
+                       "type": "appears_in",
+                       "relation_updated_date": current_date(),
+                       "extraction_version": extraction_version
+                    };
+                    crea_rel(response.data[c].tags.data[d], relObject);
+                }
+            }
+            //Si los tiene, recorremos los likes de la foto
+            if(response.data[c].likes)
+            {
+                for (var d in response.data[c].likes.data) 
+                {
+                    //Creamos la relación comment
+                    var relObject = {
+                       "to": nodeObject,
+                       "type": "like",
+                       "relation_updated_date": current_date(),
+                       "extraction_version": extraction_version
+                    };
+                    crea_rel(response.data[c].likes.data[d],relObject);
+                }
+            }
+		}
+		
+		//Enviamos el batches de nodos (las rels se envian cuando terminen los nodos)
+		send_nodes();
+    });
+}
+
+//Función que crea los nodos correspondientes a los amigos si no estan en la BD
+trataAmigos = function()
+{
+  //Declaramos la variable que es incrementada con cada recursión (si estamos en testing hacemos el bucle mas corto)
+ 
+    if(cont_general<loop.length)
+    {
+      if(typeof loop[cont_general] != "undefined")
+      {
+        FB.api(loop[cont_general].uid+"/photos?fields=comments,created_time,tags", function(response)
+        {
+          if(response.data)
+          {
+              if(response.data.length > 0)
+              {
+                  if(cont_general>0)
+                  {
+                      var nodeObject = {
+                           "type": "user",
+                           "user_type" : "R",
+                           "id": loop[cont_general].uid,
+                           "name": loop[cont_general].name,
+                           "birthday_date": loop[cont_general].birthday_date,
+                           "first_name" : loop[cont_general].first_name,
+                            "middle_name" : loop[cont_general].middle_name,
+                            "last_name" : loop[cont_general].last_name,
+                            "gender" :  loop[cont_general].sex,
+                            "locale" :  loop[cont_general].locale,
+                            "updated_date" : loop[cont_general].profile_update_time,
+                            "username" :  loop[cont_general].username,
+                            "updated" : current_date(),
+                            "node_updated_date": current_date(),
+                            "extraction_version": extraction_version
+                      };
+                      crea_nodo(nodeObject);
+                      ui.add_friend(loop[cont_general].name);
+                      amigoTemp = nodeObject;
+                      //Creamos la relacion amigo
+                      var relObject = {
+                          "to": amigoTemp,
+                          "type": "friends",
+                          "relation_updated_date": current_date(),
+                          "extraction_version": extraction_version
+                      };
+                      crea_rel(original,relObject);
+                      //Si los tiene, creamos los nodos de las empresas donde ha trabajado
+                      if(loop[cont_general].work != [])
+                      {
+                        for (var w in loop[cont_general].work) 
+                        {
+                            var nodeObject = {
+                                "type":"employer",
+                                "id": loop[cont_general].work[w].employer.id,
+                                "name": loop[cont_general].work[w].employer.name
+                            }
+                            //Creamos la relación works, si tiene campo position, lo usamos, si no no.
+                            var relObject = {
+                               "to": nodeObject,
+                               "type": "works",
+                               "relation_updated_date": current_date(),
+                               "extraction_version": extraction_version,
+                            };
+                            if(loop[cont_general].work[w].hasOwnProperty("position"))
+                            {
+                               relObject.position = loop[cont_general].work[w].position.name;
+                               relObject.id = loop[cont_general].work[w].position.id;
+                               relObject.start_date = loop[cont_general].work[w].position.start_date;
+                            }
+                            crea_nodo(nodeObject);
+                            crea_rel(amigoTemp,relObject);
+                        }
+                        
+                      }
+                      //Si los tiene, creamos los nodos de las instituciones donde ha estudiado
+                      if(loop[cont_general].education != [])
+                      {
+                        for (var w in loop[cont_general].education) 
+                        {
+                            var nodeObject = {
+                                "type": "education_institution",
+                                "subtype": loop[cont_general].education[w].type,
+                                "id": loop[cont_general].education[w].school.id,
+                                "name": loop[cont_general].education[w].school.name
+                            }
+                            //Creamos la relación works
+                            var relObject = {
+                               "to": nodeObject,
+                               "type": "studied",
+                               "relation_updated_date": current_date(),
+                               "extraction_version": extraction_version,
+                            };
+                            crea_nodo(nodeObject);
+                            crea_rel(original,relObject);
+                        }
+                      }
+                }
+                else
+                    {
+                        amigoTemp = loop[0];
+                    }                   
+                  //crea_familia llama a status_analizer y status_analizer llama a photos_analizer y photos_analizer vuelve a llamar a trata_amigos otra vez
+                  crea_familia(loop[cont_general].uid);
+              
+              }else{
+                 cont_general++;
+                 trataAmigos();
+              }
+          }
+          else
+          {
+             cont_general++;
+             trataAmigos();
+          }
+        });
+        
+      }
+      else
+      { 
+             cont_general++;
+             trataAmigos();
+      }
+    }
+    else
+    {
+       finScaneo();
+    }
+};
+
+
+
+//Función ejecutada al terminar la extracción
+finScaneo = function()
+{
+    ////console.log("fin"); 
+}
+
+
+//Función principal
+scanFriends = function()
+{
+    //Mostramos la barra de carga
+    ui.start_scan();
+
+    FB.login(function(response) {
+
+        //Extraemos mediante FQL la información de la persona que utiliza corpured
+        FB.api(
+        {
+            method: 'fql.query',
+            query: 'SELECT uid,name, birthday_date, hometown_location, first_name, middle_name, last_name, sex, locale, profile_update_time, username,work,education FROM user WHERE uid = me()'
+        },
+        function(response) {
+            //Añadimos el nodo de la persona que extrae
+            var nodeObject = {
+                   "type": "user",
+                   "user_type": "C",
+                   "id": response[0].uid,
+                   "uid": response[0].uid,
+                   "name": response[0].name,
+                   "birthday_date": response[0].birthday_date,
+                   "first_name" : response[0].first_name,
+                    "middle_name" : response[0].middle_name,
+                    "last_name" : response[0].last_name,
+                    "gender" :  response[0].sex,
+                    "locale" :  response[0].locale,
+                    "updated_date" : response[0].profile_update_time,
+                    "username" :  response[0].username,
+                    "updated" : current_date(),
+                    "node_updated_date": current_date(),
+                    "extraction_version": extraction_version
+            };
+            console.log(response);
+            crea_nodo(nodeObject);
+            original = nodeObject;
+            temp1 = nodeObject;
+            //Si los tiene, creamos los nodos de las empresas donde ha trabajado
+            if(response[0].work != [])
+            {
+              for (var w in response[0].work) 
+              {
+                  var nodeObject = {
+                      "type":"employer",
+                      "id": response[0].work[w].employer.id,
+                      "name": response[0].work[w].employer.name
+                  }
+                  //Creamos la relación works
+                  var relObject = {
+                     "to": nodeObject,
+                     "type": "works",
+                     "relation_updated_date": current_date(),
+                     "extraction_version": extraction_version,
+                  };
+                  if(response[0].work[w].hasOwnProperty("position"))
+                  {
+                     relObject.position = response[0].work[w].position.name;
+                     relObject.id = response[0].work[w].position.id;
+                     relObject.start_date = response[0].work[w].position.start_date;
+                  }
+                  crea_nodo(nodeObject);
+                  crea_rel(original,relObject);
+              }
+            }
+            //Si los tiene, creamos los nodos de las instituciones donde ha estudiado
+            if(response[0].education != [])
+            {
+              for (var w in response[0].education) 
+              {
+                  var nodeObject = {
+                      "type": "education_institution",
+                      "subtype": response[0].education[w].type,
+                      "id": response[0].education[w].school.id,
+                      "name": response[0].education[w].school.name
+                  }
+                  //Creamos la relación works
+                  var relObject = {
+                     "to": nodeObject,
+                     "type": "studied",
+                     "relation_updated_date": current_date(),
+                     "extraction_version": extraction_version,
+                  };
+                  crea_nodo(nodeObject);
+                  crea_rel(original,relObject);
+              }
+            }
+            FB.api(
+            {
+                method: 'fql.query',
+                query: 'SELECT uid,name, birthday_date, hometown_location, first_name, middle_name, last_name, sex, locale, profile_update_time, username,work,education FROM user WHERE uid IN (SELECT uid2 FROM friend WHERE uid1 = me())   AND birthday_date > 0 '
+            },
+            function(response) {
+                console.log(response);
+                  //Llamamos a la función que crea a los amigos
+                  response0 = response;
+                  if(testing)
+                  {
+                    loop = [response0[0], response[1]];
+                  }
+                  else
+                  {
+                    response0.unshift(temp1);
+                    loop = response0;
+                  }           
+                   
+                  trataAmigos();
+         
+             });
+         });
+        //Buscamos mediante FQL todos los amigos que tengan publica su fecha de nacimiento
+
+
+    }, {scope: 'friends_status,user_status,friends_photos,user_photos,friends_birthday,friends_relationships,friends_relationship_details,user_work_history,friends_work_history,user_education_history,friends_education_history'});
+};
