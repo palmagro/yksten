@@ -1,0 +1,3 @@
+botMessage = function(msg) {
+    botText(msg);
+};
