@@ -185,8 +185,10 @@ getAnswer = function() {
 			        	add_node(normalize(answer),normalize(userText().quitarArt().replaceAll(" ","_"))); 
                         console.log(answer); 
     				    add_rel(normalize(answer),normalize(userText().quitarArt().replaceAll(" ","_")),rel_type,orphan,or_t); 
-                        newQuestionB();
+                        orphan="";
                         recTipo = false;
+                        newQuestion();
+
                     }else{ 
                         or = orphan;
                         or_t = b_type;
