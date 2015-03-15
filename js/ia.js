@@ -51,6 +51,10 @@ var b_typePrev = "";
 //Método para realizar una pregunta al usuario
 search_question = function()
 {
+console.log(orphan);
+while(orphan=="")
+{
+console.log(orphan);
 var i = Math.floor(Math.random()*schema.data.length);
 console.log(i);
 a_type = schema.data[i][0];
@@ -58,7 +62,7 @@ rel_type = schema.data[i][1];
 b_type = schema.data[i][2];
 
 get_orphan(rel_type,b_type);
-
+}
 
 /*	if(Math.random()<learning_factor)
 	{
@@ -95,10 +99,19 @@ get_orphan(rel_type,b_type);
 
 search_questionB = function()
 {
-    get_orphanB();
 
+while(orphan=="")
+{
+console.log(orphan);
+var i = Math.floor(Math.random()*schema.data.length);
+console.log(i);
+a_type = schema.data[i][0];
+rel_type = schema.data[i][1];
+b_type = schema.data[i][2];
+
+get_orphanB();
 }
-
+}
 
 //Función que formula la pregunta
 make_question = function()

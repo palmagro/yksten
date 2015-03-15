@@ -115,7 +115,7 @@ get_orphanB = function()
 {
 	getOrphanCyph = 
 	{
-	  "query" : "MATCH (b:"+a_typeOld+")-[r*1..2]-(a:"+b_type+ ") WHERE b.name = '"+ answer +"' RETURN a limit 1",
+	  "query" : "MATCH (b:"+a_typeOld+")-[r]-(a:"+b_type+ ") WHERE b.name = '"+ answer +"' RETURN a limit 1",
 	  "params" : 
 	  {
 		
