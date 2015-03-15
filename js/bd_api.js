@@ -77,9 +77,10 @@ get_num_concepts = function()
 //Método para buscar unnodo huérfano
 get_orphan = function(rel_t,b_t)
 {
+    var offset = Math.floor(Math.random()*10);
 	getOrphanCyph = 
 	{
-	  "query" : "MATCH (b:"+b_t+") WHERE NOT ()-[: "+rel_t+"]->(b) RETURN b",
+	  "query" : "MATCH (b:"+b_t+")  RETURN b skip "+ offset + " limit 1",
 	  "params" : 
 	  {
 		
@@ -109,6 +110,42 @@ get_orphan = function(rel_t,b_t)
        }
    });
 }
+
+get_orphanB = function()
+{
+	getOrphanCyph = 
+	{
+	  "query" : "MATCH (b:"+a_typeOld+")-[r*1..3]-(a:"+b_type+ ") WHERE b.name = '"+ answer +"' RETURN a limit 1",
+	  "params" : 
+	  {
+		
+	  }
+	};
+	$.ajax({
+       async: false, 
+       type: "POST",
+       url: restServerURL + "/cypher",
+       data: JSON.stringify(getOrphanCyph),
+       dataType: "json",
+       contentType: "application/json",
+       success: function( data ) {
+		   console.log(data);
+		   if(data.data.length>0)
+		   {
+			   console.log("Orphan finded...")
+			   orphan = data.data[0][0];
+		   }	   
+       },
+       error: function( xhr ) {
+		   print('error retrieving orphan');
+           window.console && console.log( xhr );
+       },
+       complete: function(data) {
+
+       }
+   });
+}
+
 
 //Método para buscar unnodo huérfano
 get_son = function(rel_t,b_t)
@@ -183,6 +220,42 @@ add_node = function(text,type)
    });
 
 }
+
+
+//Función que borra un nodo
+remove_node = function(node,type)
+{
+    print("Borrando nodo..."); 
+			
+	addNodeCyph =
+	{
+		query: "n:"+type+" {name:{value_name}})DELETE n",
+		params: 
+		{
+			value_name: node.data.name,
+		}				
+	}
+
+	$.ajax({
+       async: false, 
+       type: "POST",
+       url: restServerURL + "/cypher",
+       data: JSON.stringify(addNodeCyph),
+       dataType: "json",
+       contentType: "application/json",
+       success: function( data ) {
+		   print("Borrado nodo");
+       },
+       error: function( xhr ) {
+		   print("Error borrando nodo");
+           window.console && console.log( xhr );
+       },
+       complete: function(data) {
+       }
+   });
+
+}
+
 
 //Función que crea una relación
 add_rel = function(a,a_t,rel_type,b,b_t)

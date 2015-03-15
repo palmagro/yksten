@@ -22,6 +22,7 @@ var initial_weight = 30;
 var answer;
 var answerPrev;
 
+var     a_typeOld;
 
 //Variable para el Schema
 var schema = {};
@@ -50,7 +51,16 @@ var b_typePrev = "";
 //Método para realizar una pregunta al usuario
 search_question = function()
 {
-	if(Math.random()<learning_factor)
+var i = Math.floor(Math.random()*schema.data.length);
+console.log(i);
+a_type = schema.data[i][0];
+rel_type = schema.data[i][1];
+b_type = schema.data[i][2];
+
+get_orphan(rel_type,b_type);
+
+
+/*	if(Math.random()<learning_factor)
 	{
 		learning = true;
 		var i = 0;
@@ -62,7 +72,7 @@ search_question = function()
 			b_type = schema.data[i][2];
 			console.log(schema);
 			console.log(rel_type);
-			get_orphan(rel_type,b_type);		
+
 			i = Math.round(Math.random()*(schema.data.length-1));
 			console.log(i);
 		}
@@ -80,21 +90,28 @@ search_question = function()
 		console.log(schema);
 		console.log(rel_type);
 		get_son(rel_type,b_type);	
-	}
+	}*/
 }
+
+search_questionB = function()
+{
+    get_orphanB();
+
+}
+
 
 //Función que formula la pregunta
 make_question = function()
 {
 	var question = "";
 	console.log(answer);
-	if(true)//numquestions == 0 || answer == undefined || answer =="")
+	if(numquestions == 0 || answer == undefined || answer =="")
 	{
 		question = dict[lang]["hi"];
 	}
 	else
 	{
-		var question = answer.toLowerCase().replace(/_/g," ")+ " " +rel_typePrev.toLowerCase().replace(/_/g," ")+" "+orphanPrev + dict[lang]["and"];
+		var question = "¿Qué "//answer.toLowerCase().replace(/_/g," ")+ " " +rel_typePrev.toLowerCase().replace(/_/g," ")+" "+orphanPrev + dict[lang]["and"];
 	}
 	question += a_type.toLowerCase() +" "+rel_type.toLowerCase().replace(/_/g," ")+" "+ orphan.data.name +"?";
 	a_typePrev = a_type;
@@ -106,14 +123,24 @@ make_question = function()
 
 //Método que envia el mensaje del Bot
 botMessage = function(msg) {
+
     botText(msg);
 };
+
+
+//Método que recibe la respuesta al pulsar i dont know
+dontknow = function() {
+    //remove_node(orphan,b_type);
+    newQuestion();
+};
+
 
 //Método que recibe la respuesta al pulsar enter/boton
 getAnswer = function() {
     answer = userText();
 	userText("");
 	console.log(answer);
+    a_typeOld = a_type;
 	if(answer == "castellano")
 	{
 		lang = 1;
@@ -124,6 +151,7 @@ getAnswer = function() {
 		{
 			if(learning)
 			{
+                
 				add_node(answer,a_type);
 				add_rel(a,a_type,rel_type,orphan,b_type);
 			}else
@@ -132,7 +160,7 @@ getAnswer = function() {
 				add_rel(a,a_type,rel_type,orphan,b_type);
 				//checkAnswer(answer);
 			}
-			newQuestion();
+			newQuestionB();
 		}
 	}
 };
@@ -140,16 +168,33 @@ getAnswer = function() {
 //Función nueva pregunta
 newQuestion = function () 
 {
-    $("#ask2").hide();    
+    console.log("2222222222222");
+    //$("#ask2").hide();    
 	orphan="";
 	userText("");
-	get_schema();
+	//get_schema();
 	search_question();
 	make_question();
 	$("#input").focus();
 	$("#main").center();
-    $("#ask2").show();
+
 }
+
+newQuestionB = function () 
+{
+    //$("#ask2").hide();    
+	oldOrphan = orphan;
+    b_typeOld = b_type;
+    orphan="";
+	userText("");
+	//get_schema();
+	search_questionB();
+	make_question();
+	$("#input").focus();
+	$("#main").center();
+
+}
+
 
 //Función principal
 main = function () 

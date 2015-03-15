@@ -7,6 +7,6 @@ dict[0] =
 
 dict[1] =
 {
-	hi:"Qu\xe9 ",
-	and:"... y qu\xe9 "
+	hi:"\xbfQu\xe9 ",
+	and:"... y \xbfqu\xe9 "
 }
