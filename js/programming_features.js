@@ -22,3 +22,37 @@ jQuery.fn.center = function () {
                                                 $(window).scrollLeft()) + "px");
     return this;
 }
+
+var normalize = (function() {
+  var from = "ÃÀÁÄÂÈÉËÊÌÍÏÎÒÓÖÔÙÚÜÛãàáäâèéëêìíïîòóöôùúüûÑñÇç", 
+      to   = "AAAAAEEEEIIIIOOOOUUUUaaaaaeeeeiiiioooouuuunncc",
+      mapping = {};
+ 
+  for(var i = 0, j = from.length; i < j; i++ )
+      mapping[ from.charAt( i ) ] = to.charAt( i );
+ 
+  return function( str ) {
+      var ret = [];
+      for( var i = 0, j = str.length; i < j; i++ ) {
+          var c = str.charAt( i );
+          if( mapping.hasOwnProperty( str.charAt( i ) ) )
+              ret.push( mapping[ c ] );
+          else
+              ret.push( c );
+      }      
+      return ret.join( '' );
+  }
+ 
+})();
+
+
+String.prototype.replaceAll = function (find, replace) {
+    var str = this;
+    return str.replace(new RegExp(find, 'g'), replace);
+};
+
+
+String.prototype.quitarArt = function () {
+    var str = this;
+   return str.replace('un ',"").replace("uno ","").replace("unos ","").replace("una ","").replace("unas ","").replace("Uno ","").replace("Unos ","").replace("Una ","").replace("Unas ","").replace("la ","").replace("el ","").replace("La ","").replace("El ","").replace("Los ","").replace("Las ","").replace("las ","").replace("los ","");
+};

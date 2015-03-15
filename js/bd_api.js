@@ -77,7 +77,7 @@ get_num_concepts = function()
 //Método para buscar unnodo huérfano
 get_orphan = function(rel_t,b_t)
 {
-    var offset = Math.floor(Math.random()*10);
+    var offset = Math.floor(Math.random()*100);
 	getOrphanCyph = 
 	{
 	  "query" : "MATCH (b:"+b_t+")  RETURN b skip "+ offset + " limit 1",
@@ -115,7 +115,7 @@ get_orphanB = function()
 {
 	getOrphanCyph = 
 	{
-	  "query" : "MATCH (b:"+a_typeOld+")-[r*1..2]-(a:"+b_type+ ") WHERE b.name = '"+ answer +"' RETURN a limit 1",
+	  "query" : "MATCH (b:"+a_typeOld+")-[r*1..3]-(a:"+b_type+ ") WHERE b.name = '"+ answer +"' RETURN a limit 1",
 	  "params" : 
 	  {
 		
@@ -260,7 +260,12 @@ remove_node = function(node,type)
 //Función que crea una relación
 add_rel = function(a,a_t,rel_type,b,b_t)
 {
-	var a_name = a.data.name;
+    console.log(a);
+    console.log(a_t);
+    if(abierta)
+      	var a_name = a;  
+    else
+    	var a_name = a.data.name;
 	var b_name = b.data.name;
 	addRelCyph =  
 	{

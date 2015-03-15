@@ -1,6 +1,10 @@
 //Variable para activar las propiedades del modo testing
 var testing = true;
 
+//Regunta abierta?
+var abierta;
+var recTipo=false;
+var or,or_t;
 //Idioma
 var lang = 1;
 //Variable para contar el numero de preguntas realizadas
@@ -14,7 +18,7 @@ var coef_evaporation = 1;
 var forget_treshold = 15;
 
 //Variable bandera para saber si estamos aprendiendo
-var learning;
+var learning=true;
 
 //Peso inicial conel que empiezan las aristas
 var initial_weight = 30;
@@ -51,18 +55,18 @@ var b_typePrev = "";
 //Método para realizar una pregunta al usuario
 search_question = function()
 {
-console.log(orphan);
-while(orphan=="")
-{
-console.log(orphan);
-var i = Math.floor(Math.random()*schema.data.length);
-console.log(i);
-a_type = schema.data[i][0];
-rel_type = schema.data[i][1];
-b_type = schema.data[i][2];
+    console.log(orphan);
+    while(orphan=="")
+    {
+        console.log(orphan);
+        var i = Math.floor(Math.random()*schema.data.length);
+        console.log(i);
+        a_type = schema.data[i][0];
+        rel_type = schema.data[i][1];
+        b_type = schema.data[i][2];
 
-get_orphan(rel_type,b_type);
-}
+        get_orphan(rel_type,b_type);
+    }
 
 /*	if(Math.random()<learning_factor)
 	{
@@ -126,13 +130,19 @@ make_question = function()
 	{
 		var question = "¿Qué "//answer.toLowerCase().replace(/_/g," ")+ " " +rel_typePrev.toLowerCase().replace(/_/g," ")+" "+orphanPrev + dict[lang]["and"];
 	}
-	question += a_type.toLowerCase() +" "+rel_type.toLowerCase().replace(/_/g," ")+" "+ orphan.data.name +"?";
+    if(abierta)
+    {
+	    question += rel_type.toLowerCase().replace(/_/g," ")+" "+ orphan.data.name +"?";
+    }else{
+	    question += a_type.toLowerCase() +" "+rel_type.toLowerCase().replace(/_/g," ")+" "+ orphan.data.name +"?";    
+    }
 	a_typePrev = a_type;
 	rel_typePrev = rel_type;
 	orphanPrev = orphan.data.name;
 	botMessage(question);
 	numquestions++;
 }
+
 
 //Método que envia el mensaje del Bot
 botMessage = function(msg) {
@@ -150,9 +160,13 @@ dontknow = function() {
 
 //Método que recibe la respuesta al pulsar enter/boton
 getAnswer = function() {
-    answer = userText();
-	userText("");
-	console.log(answer);
+    if(!recTipo)
+    {
+        answer = userText();
+    	userText("");
+    }
+
+	console.log(or);
     a_typeOld = a_type;
 	if(answer == "castellano")
 	{
@@ -162,18 +176,33 @@ getAnswer = function() {
 	{
 		if(answer!="")
 		{
-			if(learning)
-			{
-                
-				add_node(answer,a_type);
-				add_rel(a,a_type,rel_type,orphan,b_type);
-			}else
-			{
-				add_node(answer,a_type);
-				add_rel(a,a_type,rel_type,orphan,b_type);
-				//checkAnswer(answer);
-			}
-			newQuestionB();
+                if(abierta)
+                {
+                    if(recTipo)
+                    {
+                        console.log(userText());
+                        
+			        	add_node(normalize(answer),normalize(userText().quitarArt().replaceAll(" ","_"))); 
+                        console.log(answer); 
+    				    add_rel(normalize(answer),normalize(userText().quitarArt().replaceAll(" ","_")),rel_type,orphan,or_t); 
+                        newQuestionB();
+                        recTipo = false;
+                    }else{ 
+                        or = orphan;
+                        or_t = b_type;
+                        botMessage("¿Qué es "+answer+"?");
+                        recTipo = true;
+                    }
+                }
+                else
+                {
+				    add_node(answer,a_type);
+				    add_rel(a,a_type,rel_type,orphan,b_type);
+                    newQuestionB();
+
+                }
+			
+
 		}
 	}
 };
@@ -182,12 +211,15 @@ getAnswer = function() {
 newQuestion = function () 
 {
     console.log("2222222222222");
-    //$("#ask2").hide();    
-	orphan="";
+    //$("#ask2").hide();   
+    if(!abierta) {
+    	orphan="";}
 	userText("");
 	//get_schema();
 	search_question();
-	make_question();
+    //Preguntamos con el tipo fijo
+    abierta = (Math.random()>0.67);
+    make_question();
 	$("#input").focus();
 	$("#main").center();
 
@@ -198,7 +230,8 @@ newQuestionB = function ()
     //$("#ask2").hide();    
 	oldOrphan = orphan;
     b_typeOld = b_type;
-    orphan="";
+    if(!abierta) {
+        orphan="";}
 	userText("");
 	//get_schema();
 	search_questionB();

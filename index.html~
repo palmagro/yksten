@@ -22,9 +22,9 @@
 
 		<div id="ask2" class="jumbotron">
 			<p data-bind="text: botText"></p>
-				<input data-bind="value: userText" id="input" />
+				<input data-bind="value: userText" id="input" onkeydown="if (event.keyCode == 13) getAnswer();"/>
 				<button data-bind="click: getAnswer">Send</button>
-				<button data-bind="click: newQuestion">I don' know</button>
+				<button data-bind="click: dontknow">I don' know</button>
 		</div>
 
 	</div>
