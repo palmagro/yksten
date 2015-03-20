@@ -21,7 +21,7 @@ get_schema = function()
 	$.ajax({
        async: false, 
        type: "POST",
-       url: restServerURL + "/cypher",
+       url: "/send",
        data: JSON.stringify(getSchemaCyph),
        dataType: "json",
        contentType: "application/json",
@@ -53,16 +53,12 @@ get_num_concepts = function()
 	$.ajax({
        async: false, 
        type: "POST",
-       url: restServerURL + "/cypher",
+       url: "/send",
        data: JSON.stringify(getSchemaCyph),
        dataType: "json",
        contentType: "application/json",
        success: function( data ) {
-		   console.log(data);
-		   console.log('node count retrieved...');
            numConcepts(data.data[0][0]);
-		   console.log(data);
-		   
        },
        error: function( xhr ) {
 		   print('node count retrieved...');
@@ -77,9 +73,10 @@ get_num_concepts = function()
 //Método para buscar unnodo huérfano
 get_orphan = function(rel_t,b_t)
 {
+    var offset = Math.floor(Math.random()*100);
 	getOrphanCyph = 
 	{
-	  "query" : "MATCH (b:"+b_t+") WHERE NOT ()-[: "+rel_t+"]->(b) RETURN b",
+	  "query" : "MATCH (b:"+b_t+")  RETURN b skip "+ offset + " limit 1",
 	  "params" : 
 	  {
 		
@@ -88,15 +85,13 @@ get_orphan = function(rel_t,b_t)
 	$.ajax({
        async: false, 
        type: "POST",
-       url: restServerURL + "/cypher",
+       url: "/send",
        data: JSON.stringify(getOrphanCyph),
        dataType: "json",
        contentType: "application/json",
        success: function( data ) {
-		   console.log(data);
 		   if(data.data.length>0)
 		   {
-			   console.log("Orphan finded...")
 			   orphan = data.data[0][0];
 		   }	   
        },
@@ -109,6 +104,40 @@ get_orphan = function(rel_t,b_t)
        }
    });
 }
+
+get_orphanB = function()
+{
+	getOrphanCyph = 
+	{
+	  "query" : "MATCH (b:"+a_typeOld+")-[r*1..3]-(a:"+b_type+ ") WHERE b.name = '"+ answer +"' RETURN a limit 1",
+	  "params" : 
+	  {
+		
+	  }
+	};
+	$.ajax({
+       async: false, 
+       type: "POST",
+       url: "/send",
+       data: JSON.stringify(getOrphanCyph),
+       dataType: "json",
+       contentType: "application/json",
+       success: function( data ) {
+		   if(data.data.length>0)
+		   {
+			   orphan = data.data[0][0];
+		   }	   
+       },
+       error: function( xhr ) {
+		   print('error retrieving orphan');
+           window.console && console.log( xhr );
+       },
+       complete: function(data) {
+
+       }
+   });
+}
+
 
 //Método para buscar unnodo huérfano
 get_son = function(rel_t,b_t)
@@ -124,15 +153,13 @@ get_son = function(rel_t,b_t)
 	$.ajax({
        async: false, 
        type: "POST",
-       url: restServerURL + "/cypher",
+       url: "/send",
        data: JSON.stringify(getOrphanCyph),
        dataType: "json",
        contentType: "application/json",
        success: function( data ) {
-		   console.log(data);
 		   if(data.data.length>0)
 		   {
-			   console.log("Son finded...")
 			   orphan = data.data[0][0];
 		   }	   
        },
@@ -165,13 +192,12 @@ add_node = function(text,type)
 	$.ajax({
        async: false, 
        type: "POST",
-       url: restServerURL + "/cypher",
+       url: "/send",
        data: JSON.stringify(addNodeCyph),
        dataType: "json",
        contentType: "application/json",
        success: function( data ) {
 		   print("Añadido nodo");
-		   console.log(data.data[0][0]);
 		   a = data.data[0][0];
        },
        error: function( xhr ) {
@@ -184,10 +210,49 @@ add_node = function(text,type)
 
 }
 
+
+//Función que borra un nodo
+remove_node = function(node,type)
+{
+    print("Borrando nodo..."); 
+			
+	addNodeCyph =
+	{
+		query: "n:"+type+" {name:{value_name}})DELETE n",
+		params: 
+		{
+			value_name: node.data.name,
+		}				
+	}
+
+	$.ajax({
+       async: false, 
+       type: "POST",
+       url: "/send",
+       data: JSON.stringify(addNodeCyph),
+       dataType: "json",
+       contentType: "application/json",
+       success: function( data ) {
+		   print("Borrado nodo");
+       },
+       error: function( xhr ) {
+		   print("Error borrando nodo");
+           window.console && console.log( xhr );
+       },
+       complete: function(data) {
+       }
+   });
+
+}
+
+
 //Función que crea una relación
 add_rel = function(a,a_t,rel_type,b,b_t)
 {
-	var a_name = a.data.name;
+    if(abierta)
+      	var a_name = a;  
+    else
+    	var a_name = a.data.name;
 	var b_name = b.data.name;
 	addRelCyph =  
 	{
@@ -203,22 +268,19 @@ add_rel = function(a,a_t,rel_type,b,b_t)
 	$.ajax({
        async: false, 
        type: "POST",
-       url: restServerURL + "/cypher",
+       url: "/send",
        data: JSON.stringify(addRelCyph),
        dataType: "json",
        contentType: "application/json",
        success: function( data ) {
 		    print("Añadida relación");
-		    console.log(data);
 			if(data.data[0][1])
 			{
-				console.log("estaba");
 				calculate_evapor(a_t,a_name,rel_type,b_t,b_name);
 				remove_forgotten_rels();
 			}
 			else
 			{
-				console.log("no estaba");
 				calculate_evapor(a_t,a_name,rel_type,b_t,b_name);
 				remove_forgotten_rels();
 			}
@@ -249,13 +311,12 @@ calculate_evapor = function(a_t,a_name,rel_type,b_t,b_name)
 	$.ajax({
        async: false, 
        type: "POST",
-       url: restServerURL + "/cypher",
+       url: "/send",
        data: JSON.stringify(addRelCyph),
        dataType: "json",
        contentType: "application/json",
        success: function( data ) {
 		    print("obteniendoevaporacion");
-		    console.log(data.data[0][0]);
 			var num_of_rels = data.data[0][0];
 			forgetting_rels(a_t,a_name,rel_type,b_t,b_name,num_of_rels);
        },
@@ -284,13 +345,12 @@ forgetting_rels = function(a_t,a_name,rel_type,b_t,b_name,num_of_rels)
 	$.ajax({
        async: false, 
        type: "POST",
-       url: restServerURL + "/cypher",
+       url: "/send",
        data: JSON.stringify(forgetRelCyph),
        dataType: "json",
        contentType: "application/json",
        success: function( data ) {
 		    print("olvidando relaciones");
-		    console.log(data);
        },
        error: function( xhr ) {
 		   print("Error olvidando relaciones");
@@ -316,13 +376,12 @@ remove_forgotten_rels = function()
 	$.ajax({
        async: false, 
        type: "POST",
-       url: restServerURL + "/cypher",
+       url: "/send",
        data: JSON.stringify(removeForgottenRelsCyph),
        dataType: "json",
        contentType: "application/json",
        success: function( data ) {
 		    print("olvidadas relaciones");
-		    console.log(data);
        },
        error: function( xhr ) {
 		   print("Error olvidando relaciones");

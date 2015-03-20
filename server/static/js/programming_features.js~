@@ -3,7 +3,7 @@ print = function (txt)
 {
 	if(testing)
 	{
-		//console.log(txt);
+		console.log(txt);
 	}
 }
 

@@ -21,7 +21,7 @@ get_schema = function()
 	$.ajax({
        async: false, 
        type: "POST",
-       url: restServerURL + "/cypher",
+       url: "/send",
        data: JSON.stringify(getSchemaCyph),
        dataType: "json",
        contentType: "application/json",
@@ -77,7 +77,7 @@ get_num_concepts = function()
 //Método para buscar unnodo huérfano
 get_orphan = function(rel_t,b_t)
 {
-    var offset = Math.floor(Math.random()*10);
+    var offset = Math.floor(Math.random()*100);
 	getOrphanCyph = 
 	{
 	  "query" : "MATCH (b:"+b_t+")  RETURN b skip "+ offset + " limit 1",

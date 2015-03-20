@@ -1,167 +1,219 @@
-//Variable para activar las propiedades del modo testing
-var testing = true;
+//Neo4j URL
+var restServerURL = "http://mowento.cs.us.es:7777/db/data";
 
-//Variables para el batch
-var nodosPorAdd = []
-var peticionesNodos = []
-var peticionesRels = []
-var diccionario_nodos = {}
-
-
-
-//Funcion que crea un nodo, parametros: 
-crea_nodo = function(objeto)
+//Método para extraer el esquema de Neo4j
+get_schema = function()
 {
-  if(objeto.hasOwnProperty("x"))
-  {
-	delete objeto["x"];
-  }
-  if(objeto.hasOwnProperty("y"))
-  {
-	delete objeto["y"];
-  }
-  //Si el nodo no tiene los campos extraction_version o node_updated_date, los creamos.
-  if(!objeto.extraction_version)
-  {
-      objeto.extraction_version = extraction_version; 
-  }
-  if(!objeto.node_updated_date)
-  {
-      objeto.node_updated_date = current_date();
-  }
-  if(!objeto.extraction_version)
-  {
-      objeto.extraction_version = extraction_version; 
-  }
-  //Si la peticion de creacion del nodo fue ya incluida en el batch anteriormente no la volvemos a incluir. 
-  if(nodosPorAdd.indexOf(objeto.id) == -1)
-  {
-    console.log(objeto);
-	peticionesNodos.push(objeto);
-	nodosPorAdd.push(objeto.id);
-  }
-}
-
-//Funcion que crea una relación
-crea_rel = function(origen,objetoRel)
-{
-    //Si no tiene tipo suponemos que es de tipo usuario
-	if(!origen.hasOwnProperty('type'))
-	{  
-		origen.type = "user";
-	}
-    //Si es de tipo usuario y no se especifica lo contrario el usuario es de tipo "R" relacionado
-    /*
-	if(origen.type=="user" && !origen.hasOwnProperty('user_type'))
-	{  
-		origen.user_type = "R";
-	}
-    Aquí se lía...
-    */
-	crea_nodo(origen);
-	objetoRel.from = origen;
-	peticionesRels.push(objetoRel);
-}
-
-//Función que envia los batches con las peticiones de creacion de nodos
-send_nodes = function()
-{
-    //console.log("Enviando nodos..."); 
-
-	dataNodes = []
-	diccionarioNodos = {}
-
-	for (var c in peticionesNodos)
+	// What is related, and how
+	var getSchemaCyph = 
 	{
-        console.log(peticionesNodos[c].type);
-		if(peticionesNodos[c].id)
-		{
-			dataNodes.push
-			({
-				method:"POST",
-				to:"/cypher",
-				body:
-				{
-					query: "MERGE (n:"+peticionesNodos[c].type+" {id:{value_id}}) ON MATCH SET n = {values} ON CREATE SET n = {values} RETURN n",
-					params: 
-					{
-						value_id: peticionesNodos[c].id,
-						values: peticionesNodos[c],
-						type: peticionesNodos[c].type
-					}				
-				}
-			});
-		}
+	  "query" : "MATCH (a)-[r]->(b) RETURN DISTINCT head(labels(a)) AS This, type(r) as To, head(labels(b)) AS That LIMIT 100",
+	  "params" : {	  }
+	};
+	if(kfield == "todo")
+	{
+		getSchemaCyph = 
+			{
+			  "query" : "MATCH (a)-[r]->(b) RETURN DISTINCT head(labels(a)) AS This, type(r) as To, head(labels(b)) AS That LIMIT 100",
+			  "params" : {	"nombre_peli" : id  }
+			};
 	}
-	 //window.location.replace("http://stackoverflow.com");enviar_batch(JSON.stringify(dataNodes));
-    console.log(dataNodes);
 	$.ajax({
-       async: true, 
+       async: false, 
        type: "POST",
        url: "/send",
-       data: JSON.stringify(dataNodes),
+       data: JSON.stringify(getSchemaCyph),
        dataType: "json",
        contentType: "application/json",
-       success: actualiza_diccionario,
+       success: function( data ) {
+		   print(data);
+		   print('Schema retrieved...');
+           schema = data;
+		   
+       },
        error: function( xhr ) {
+		   print('error retrieving schema');
            window.console && console.log( xhr );
-		   actualiza_diccionario();
        },
        complete: function(data) {
+
        }
    });
-
 }
 
-//Función que envia los batches conlas peticiones de creacion de relaciones
-send_rels = function()
+get_num_concepts = function()
 {
-    //console.log("Enviando relaciones..."); 
-
-	dataRels = []
-	for (var c in peticionesRels)
+	// What is related, and how
+	var getSchemaCyph = 
 	{
-		if(peticionesRels[c].from.id && peticionesRels[c].to.id)
-		{
-			dataRels.push
-			({
-				method:"POST",
-				to:"/cypher",
-				body: 
-				{
-					query:"MATCH (n:"+peticionesRels[c].from.type+" {id:{id1}}),(m:"+peticionesRels[c].to.type+" {id:{id2}}) MERGE (n)-[r:"+peticionesRels[c].type+" { extraction_version :" + peticionesRels[c].extraction_version + ", relation_updated_date:'"+ peticionesRels[c].relation_updated_date + "' } ]->(m)",
-					params:
-					{
-						id1:peticionesRels[c].from.id,
-						id2:peticionesRels[c].to.id
-					}
-				}
-			});
-		}
-	}
+	  "query" : "match n return count(*)",
+	  "params" : {	  }
+	};
 	
-	//Convertimos los objetos to y from de facebook a las urls de los nodos correspondientes en neo4j haciendo uso del diccionario
-	//YA NO NOS HACE FALTA EL DICCIONARIOPORQUEESTAMOS REFERENCIANDO LOSNODOS CON CYPHER MEDIANTE SU ID DE FB!!!PERO O GUARDAMOS PORQUEQUIZAS NOS INTERESE DESPUES PARA OPTIMIZAR CON LOS INDICES!!
-/*	var temp;
-	for (var d in dataRels)
-	{
-		urlDestino = diccionario_nodos[dataRels[d].body.to.id];
-		urlOrigen = diccionario_nodos[dataRels[d].body.from.id];
-		dataRels[d].body.to = urlDestino;
-		dataRels[d].to = urlOrigen+"/relationships";
-	}
-	*/
 	$.ajax({
-       async: true, 
+       async: false, 
        type: "POST",
        url: "/send",
-       data: JSON.stringify(dataRels),
+       data: JSON.stringify(getSchemaCyph),
        dataType: "json",
        contentType: "application/json",
-       success: limpia_batches,
+       success: function( data ) {
+		   console.log(data);
+		   console.log('node count retrieved...');
+           numConcepts(data.data[0][0]);
+		   console.log(data);
+		   
+       },
        error: function( xhr ) {
+		   print('node count retrieved...');
            window.console && console.log( xhr );
-		   limpia_batches();
+       },
+       complete: function(data) {
+
+       }
+   });
+}
+
+//Método para buscar unnodo huérfano
+get_orphan = function(rel_t,b_t)
+{
+    var offset = Math.floor(Math.random()*100);
+	getOrphanCyph = 
+	{
+	  "query" : "MATCH (b:"+b_t+")  RETURN b skip "+ offset + " limit 1",
+	  "params" : 
+	  {
+		
+	  }
+	};
+	$.ajax({
+       async: false, 
+       type: "POST",
+       url: "/send",
+       data: JSON.stringify(getOrphanCyph),
+       dataType: "json",
+       contentType: "application/json",
+       success: function( data ) {
+		   console.log(data);
+		   if(data.data.length>0)
+		   {
+			   console.log("Orphan finded...")
+			   orphan = data.data[0][0];
+		   }	   
+       },
+       error: function( xhr ) {
+		   print('error retrieving orphan');
+           window.console && console.log( xhr );
+       },
+       complete: function(data) {
+
+       }
+   });
+}
+
+get_orphanB = function()
+{
+	getOrphanCyph = 
+	{
+	  "query" : "MATCH (b:"+a_typeOld+")-[r*1..3]-(a:"+b_type+ ") WHERE b.name = '"+ answer +"' RETURN a limit 1",
+	  "params" : 
+	  {
+		
+	  }
+	};
+	$.ajax({
+       async: false, 
+       type: "POST",
+       url: "/send",
+       data: JSON.stringify(getOrphanCyph),
+       dataType: "json",
+       contentType: "application/json",
+       success: function( data ) {
+		   console.log(data);
+		   if(data.data.length>0)
+		   {
+			   console.log("Orphan finded...")
+			   orphan = data.data[0][0];
+		   }	   
+       },
+       error: function( xhr ) {
+		   print('error retrieving orphan');
+           window.console && console.log( xhr );
+       },
+       complete: function(data) {
+
+       }
+   });
+}
+
+
+//Método para buscar unnodo huérfano
+get_son = function(rel_t,b_t)
+{
+	getOrphanCyph = 
+	{
+	  "query" : "MATCH (b:"+b_t+") WHERE ()-[: "+rel_t+"]->(b) RETURN b",
+	  "params" : 
+	  {
+		
+	  }
+	};
+	$.ajax({
+       async: false, 
+       type: "POST",
+       url: "/send",
+       data: JSON.stringify(getOrphanCyph),
+       dataType: "json",
+       contentType: "application/json",
+       success: function( data ) {
+		   console.log(data);
+		   if(data.data.length>0)
+		   {
+			   console.log("Son finded...")
+			   orphan = data.data[0][0];
+		   }	   
+       },
+       error: function( xhr ) {
+		   print('error retrieving orphan');
+           window.console && console.log( xhr );
+       },
+       complete: function(data) {
+
+       }
+   });
+}
+
+
+//Función que crea un nodo
+add_node = function(text,type)
+{
+    print("Añadiendo nodo..."); 
+			
+	addNodeCyph =
+	{
+		query: "MERGE (n:"+type+" {name:{value_name}}) ON MATCH SET n = {values} ON CREATE SET n = {values} RETURN n",
+		params: 
+		{
+			value_name: text,
+			values: {name:text}
+		}				
+	}
+
+	$.ajax({
+       async: false, 
+       type: "POST",
+       url: "/send",
+       data: JSON.stringify(addNodeCyph),
+       dataType: "json",
+       contentType: "application/json",
+       success: function( data ) {
+		   print("Añadido nodo");
+		   console.log(data.data[0][0]);
+		   a = data.data[0][0];
+       },
+       error: function( xhr ) {
+		   print("Error añadiendo nodo");
+           window.console && console.log( xhr );
        },
        complete: function(data) {
        }
@@ -169,81 +221,195 @@ send_rels = function()
 
 }
 
-//Función que actualiza el diccionario con {id de fb: id de neo4j}
-actualiza_diccionario = function(data)
-{
-    
-	//Ahora no estamos usando el diccionario, por lo quenohace falta actualizarlo
-	/*console.log("Actualizando diccionario..."); 
 
-	for (var c in data)
+//Función que borra un nodo
+remove_node = function(node,type)
+{
+    print("Borrando nodo..."); 
+			
+	addNodeCyph =
 	{
-		diccionario_nodos[data[c].body.data[0][0].data.id] = data[c].body.data[0][0].self;
+		query: "n:"+type+" {name:{value_name}})DELETE n",
+		params: 
+		{
+			value_name: node.data.name,
+		}				
 	}
-	*/
-	//Reseteamos peticionesNodos y nodosPorAdd
-	peticionesNodos = [];
-	nodosPorAdd = [];
-	send_rels();
+
+	$.ajax({
+       async: false, 
+       type: "POST",
+       url: "/send",
+       data: JSON.stringify(addNodeCyph),
+       dataType: "json",
+       contentType: "application/json",
+       success: function( data ) {
+		   print("Borrado nodo");
+       },
+       error: function( xhr ) {
+		   print("Error borrando nodo");
+           window.console && console.log( xhr );
+       },
+       complete: function(data) {
+       }
+   });
+
 }
 
-//Función que limpia las estructuras temporales necesarias para los batchs y vuelve a llamar a la función trataAmigos
-limpia_batches = function(data)
+
+//Función que crea una relación
+add_rel = function(a,a_t,rel_type,b,b_t)
 {
-    //console.log("Limpiando batches..."); 
+    console.log(a);
+    console.log(a_t);
+    if(abierta)
+      	var a_name = a;  
+    else
+    	var a_name = a.data.name;
+	var b_name = b.data.name;
+	addRelCyph =  
+	{
+		query: "MATCH (n:"+a_t+" {name:{name_a}}),(m:"+b_t+" {name:{name_b}}) MERGE (n)-[r:"+rel_type+"]->(m) ON CREATE SET r.weight = {ini_weight}, r.create = timestamp() ON MATCH SET r.weight = r.weight + {ini_weight}, r.lastModified = timestamp() RETURN r, has(r.lastModified) as onMerge ",
+		params:
+		{
+			name_a:a_name,
+			name_b:b_name,
+			ini_weight: initial_weight
+		}
+	};
 
-	//Reseteamos peticionesNodos, nodosPorAdd y peticionesRels y pasamos al siguiente amigo
-	peticionesNodos = [];
-	peticionesRels = [];
-	nodosPorAdd = [];
-    cont_general++;
-    trataAmigos();
+	$.ajax({
+       async: false, 
+       type: "POST",
+       url: "/send",
+       data: JSON.stringify(addRelCyph),
+       dataType: "json",
+       contentType: "application/json",
+       success: function( data ) {
+		    print("Añadida relación");
+		    console.log(data);
+			if(data.data[0][1])
+			{
+				console.log("estaba");
+				calculate_evapor(a_t,a_name,rel_type,b_t,b_name);
+				remove_forgotten_rels();
+			}
+			else
+			{
+				console.log("no estaba");
+				calculate_evapor(a_t,a_name,rel_type,b_t,b_name);
+				remove_forgotten_rels();
+			}
+		    search_question();
+		    make_question();
+       },
+       error: function( xhr ) {
+		   print("Error añadiendo relación");
+           window.console && console.log( xhr );
+       },
+       complete: function(data) {
+       }
+   });
+
 }
 
-function base64_encode(data) {
-  //  discuss at: http://phpjs.org/functions/base64_encode/
-  // original by: Tyler Akins (http://rumkin.com)
-  // improved by: Bayron Guevara
-  // improved by: Thunder.m
-  // improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-  // improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-  // improved by: Rafał Kukawski (http://kukawski.pl)
-  // bugfixed by: Pellentesque Malesuada
-  //   example 1: base64_encode('Kevin van Zonneveld');
-  //   returns 1: 'S2V2aW4gdmFuIFpvbm5ldmVsZA=='
-  //   example 2: base64_encode('a');
-  //   returns 2: 'YQ=='
+calculate_evapor = function(a_t,a_name,rel_type,b_t,b_name)
+{
+	addRelCyph =  
+	{
+		query: "MATCH (a:"+a_t+")-[r:"+rel_type+"]->(b:"+b_t+"{name:{bname}}) return count(a)",
+		params:
+		{
+			bname: b_name
+		}
+	};
 
-  var b64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
-  var o1, o2, o3, h1, h2, h3, h4, bits, i = 0,
-    ac = 0,
-    enc = '',
-    tmp_arr = [];
+	$.ajax({
+       async: false, 
+       type: "POST",
+       url: "/send",
+       data: JSON.stringify(addRelCyph),
+       dataType: "json",
+       contentType: "application/json",
+       success: function( data ) {
+		    print("obteniendoevaporacion");
+		    console.log(data.data[0][0]);
+			var num_of_rels = data.data[0][0];
+			forgetting_rels(a_t,a_name,rel_type,b_t,b_name,num_of_rels);
+       },
+       error: function( xhr ) {
+		   print("Error obteniendo evaporacion");
+           window.console && console.log( xhr );
+       },
+       complete: function(data) {
+       }
+   });
 
-  if (!data) {
-    return data;
-  }
-
-  do { // pack three octets into four hexets
-    o1 = data.charCodeAt(i++);
-    o2 = data.charCodeAt(i++);
-    o3 = data.charCodeAt(i++);
-
-    bits = o1 << 16 | o2 << 8 | o3;
-
-    h1 = bits >> 18 & 0x3f;
-    h2 = bits >> 12 & 0x3f;
-    h3 = bits >> 6 & 0x3f;
-    h4 = bits & 0x3f;
-
-    // use hexets to index into b64, and append result to encoded string
-    tmp_arr[ac++] = b64.charAt(h1) + b64.charAt(h2) + b64.charAt(h3) + b64.charAt(h4);
-  } while (i < data.length);
-
-  enc = tmp_arr.join('');
-
-  var r = data.length % 3;
-
-  return (r ? enc.slice(0, r - 3) : enc) + '==='.slice(r || 3);
 }
+
+forgetting_rels = function(a_t,a_name,rel_type,b_t,b_name,num_of_rels)
+{
+	var dif = coef_evaporation / num_of_rels;
+	forgetRelCyph =  
+	{
+		query: "MATCH (:"+a_t+")-[r:"+rel_type+"]->(b:"+b_t+"{name:{bname}}) set r.weight = r.weight - "+dif+" return r",
+		params:
+		{
+			bname: b_name
+		}
+	};
+
+	$.ajax({
+       async: false, 
+       type: "POST",
+       url: "/send",
+       data: JSON.stringify(forgetRelCyph),
+       dataType: "json",
+       contentType: "application/json",
+       success: function( data ) {
+		    print("olvidando relaciones");
+		    console.log(data);
+       },
+       error: function( xhr ) {
+		   print("Error olvidando relaciones");
+           window.console && console.log( xhr );
+       },
+       complete: function(data) {
+       }
+   });
+
+}
+
+remove_forgotten_rels = function()
+{
+	removeForgottenRelsCyph =  
+	{
+		query: "MATCH ()-[r]->() where r.weight < "+forget_treshold+" delete r",
+		params:
+		{
+
+		}
+	};
+
+	$.ajax({
+       async: false, 
+       type: "POST",
+       url: "/send",
+       data: JSON.stringify(removeForgottenRelsCyph),
+       dataType: "json",
+       contentType: "application/json",
+       success: function( data ) {
+		    print("olvidadas relaciones");
+		    console.log(data);
+       },
+       error: function( xhr ) {
+		   print("Error olvidando relaciones");
+           window.console && console.log( xhr );
+       },
+       complete: function(data) {
+       }
+   });
+
+}
+
 

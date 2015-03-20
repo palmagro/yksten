@@ -21,7 +21,7 @@ get_schema = function()
 	$.ajax({
        async: false, 
        type: "POST",
-       url: restServerURL + "/cypher",
+       url: "/send",
        data: JSON.stringify(getSchemaCyph),
        dataType: "json",
        contentType: "application/json",
@@ -53,7 +53,7 @@ get_num_concepts = function()
 	$.ajax({
        async: false, 
        type: "POST",
-       url: restServerURL + "/cypher",
+       url: restServerURL + "/send",
        data: JSON.stringify(getSchemaCyph),
        dataType: "json",
        contentType: "application/json",
@@ -89,7 +89,7 @@ get_orphan = function(rel_t,b_t)
 	$.ajax({
        async: false, 
        type: "POST",
-       url: restServerURL + "/cypher",
+       url: restServerURL + "/send",
        data: JSON.stringify(getOrphanCyph),
        dataType: "json",
        contentType: "application/json",

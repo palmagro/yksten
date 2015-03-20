@@ -145,6 +145,7 @@ getAnswer = function() {
                     {
                        
 			        	add_node(normalize(answer),normalize(userText().quitarArt().replaceAll(" ","_"))); 
+
     				    add_rel(normalize(answer),normalize(userText().quitarArt().replaceAll(" ","_")),rel_type,orphan,or_t); 
                         orphan="";
                         recTipo = false;
@@ -173,6 +174,7 @@ getAnswer = function() {
 //Función nueva pregunta
 newQuestion = function () 
 {
+    console.log("2222222222222");
     //$("#ask2").hide();   
     if(!abierta) {
     	orphan="";}
