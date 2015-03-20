@@ -6,7 +6,7 @@ app = Flask(__name__)
 def send():
     print "Sending..."
     print request.data
-    schema = requests.post('http://mowento.cs.us.es:7777/db/data/cypher', request.data)
+    r = requests.post('http://mowento.cs.us.es:7777/db/data/cypher', request.data)
     return Response(r, status=200, mimetype='application/json')
 
 @app.route("/")
