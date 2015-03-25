@@ -98,7 +98,7 @@ make_question = function()
     {
 	    question += rel_type.toLowerCase().replace(/_/g," ")+" "+ orphan.data.name +"?";
     }else{
-	    question += a_type.toLowerCase() +" "+rel_type.toLowerCase().replace(/_/g," ")+" "+ orphan.data.name +"?";    
+	    question += a_type.toLowerCase().replace(/_/g," ") +" "+rel_type.toLowerCase().replace(/_/g," ")+" "+ orphan.data.name +"?";    
     }
 	a_typePrev = a_type;
 	rel_typePrev = rel_type;
