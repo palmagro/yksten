@@ -1,10 +1,10 @@
 //Método para la traza
 print = function (txt)
 {
-	if(testing)
-	{
+//	if(testing)
+//	{
 		//console.log(txt);
-	}
+//	}
 }
 
 //Método para random int
@@ -56,3 +56,10 @@ String.prototype.quitarArt = function () {
     var str = this;
    return str.replace('un ',"").replace("uno ","").replace("unos ","").replace("una ","").replace("unas ","").replace("Uno ","").replace("Unos ","").replace("Una ","").replace("Unas ","").replace("la ","").replace("el ","").replace("La ","").replace("El ","").replace("Los ","").replace("Las ","").replace("las ","").replace("los ","");
 };
+
+//send answer if press enter
+function myscript(e){
+    if(e.keyCode == 13){
+        send();
+    }
+}
