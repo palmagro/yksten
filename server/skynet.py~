@@ -17,7 +17,7 @@ recibeTipo = False
 
 
 app = Flask(__name__)
-db = GraphDatabase("http://mowento.cs.us.es:7777/db/data")
+db = GraphDatabase("http://mowento.cs.us.es:7777/db/data",  username="neo4j", password="parrilas")
 
 server = 'http://mowento.cs.us.es:7777/db/data/'
 initial_weight = 30;
@@ -75,7 +75,7 @@ def send():
             recibeTipo = True
             return "¿Que es "+a+"?"
     else:
-        tipo_a = str(request.data).replace(' ','_')
+        tipo_a = str(request.data).replace(' ','_').replace('"','')
         add_node(a,tipo_a);
         add_rel(str(a),str(tipo_a),str(tipo_rel),str(b),str(tipo_b));
         recibeTipo = False

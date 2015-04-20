@@ -17,7 +17,7 @@ recibeTipo = False
 
 
 app = Flask(__name__)
-db = GraphDatabase("http://mowento.cs.us.es:7777/db/data")
+db = GraphDatabase("http://mowento.cs.us.es:7777/db/data",  username="neo4j", password="parrilas")
 
 server = 'http://mowento.cs.us.es:7777/db/data/'
 initial_weight = 30;
